@@ -69,7 +69,7 @@ class Quantizer(nn.Module):
 
         e_latent_loss = F.mse_loss(quantized.detach(), x)
         q_latent_loss = F.mse_loss(quantized, x.detach())
-        loss = q_latent_loss + self._commitment_cost * e_latent_loss
+        quant_loss = q_latent_loss + self._commitment_cost * e_latent_loss
 
         # Straight through estimator trick
         # This allows gradients to flow through the quantized values
@@ -80,4 +80,4 @@ class Quantizer(nn.Module):
         avg_probs = torch.mean(encodings, dim=0)
         perplexity = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
 
-        return quantized, loss, encodings, perplexity
+        return quantized, quant_loss, encodings, perplexity
