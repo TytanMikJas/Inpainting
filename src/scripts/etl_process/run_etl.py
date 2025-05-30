@@ -1,4 +1,4 @@
-from ETLProcessor import ETLProcessor
+from src.scripts.etl_process.ETLProcessor import ETLProcessor
 
 if __name__ == "__main__":
     DATASET_ID = "mahmudulhaqueshawon/cat-image"
