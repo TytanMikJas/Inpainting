@@ -1,2 +1,5 @@
 run_etl:
-	python src/scripts/etl_process/run_etl.py
+	python src/main.py run_etl
+
+run_dummy_training:
+	python src/main.py run_dummy_training

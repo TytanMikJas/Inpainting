@@ -1,7 +1,7 @@
 import os
-from DataDownloader import DataDownloader
-from DataSplitter import DataSplitter
-from DataTransformer import DataTransformer
+from scripts.etl_process.DataDownloader import DataDownloader
+from scripts.etl_process.DataSplitter import DataSplitter
+from scripts.etl_process.DataTransformer import DataTransformer
 
 
 class ETLProcessor:
