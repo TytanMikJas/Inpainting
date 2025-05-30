@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from typing import Tuple
 from models.baseline.encoder import Encoder
 from models.baseline.decoder import Decoder

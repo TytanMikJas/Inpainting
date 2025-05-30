@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from typing import Tuple
 from models.baseline.encoder import Encoder
 from models.baseline.decoder import Decoder
@@ -14,6 +13,7 @@ class VAE(nn.Module):
         residual_hiddens: int,
         num_residual_layers: int,
         latent_dim: int,
+        device: str = "cuda" if torch.cuda.is_available() else "cpu",
     ):
         """
         Variational Autoencoder (VAE) for 64x64 RGB images.
@@ -25,6 +25,8 @@ class VAE(nn.Module):
             latent_dim (int): Size of the latent space.
         """
         super(VAE, self).__init__()
+        self.device = device
+        self.to(device)
         self.hidden_dim = hidden_dim
 
         self._input_shape = (input_dim, 64, 64)
