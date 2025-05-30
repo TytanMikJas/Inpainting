@@ -174,3 +174,4 @@ cython_debug/
 .pypirc
 
 data/raw_data/cats
+data/data_splits

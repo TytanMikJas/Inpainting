@@ -1,10 +1,7 @@
-import os
-import zipfile
 import json
 from torchvision import transforms
 from torchvision.datasets import ImageFolder
-from torch.utils.data import DataLoader, Dataset, Subset
-from sklearn.model_selection import train_test_split
+from torch.utils.data import DataLoader, Dataset
 
 
 class ListDataset(Dataset):
