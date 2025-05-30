@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 from typing import Tuple
-from models.baseline.encoder import Encoder
-from models.baseline.decoder import Decoder
+from src.models.baseline.encoder import Encoder
+from src.models.baseline.decoder import Decoder
 
 
 class VAE(nn.Module):
@@ -58,9 +58,6 @@ class VAE(nn.Module):
         )
 
     def _kl_divergence(self, mu: torch.Tensor, logvar: torch.Tensor) -> torch.Tensor:
-        """
-        Compute KL divergence between the learned latent distribution and standard normal.
-        """
         return -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
 
     def reparameterize(self, mu: torch.Tensor, logvar: torch.Tensor) -> torch.Tensor:

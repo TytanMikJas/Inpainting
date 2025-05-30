@@ -37,7 +37,7 @@ class DataSplitter:
 
     def split(self):
         dataset = ImageFolder(self.image_dir)
-        samples = dataset.samples
+        samples = [(os.path.normpath(path), label) for path, label in dataset.samples]
 
         train_val, test = train_test_split(
             samples, test_size=self.ratios[2], random_state=self.random_state

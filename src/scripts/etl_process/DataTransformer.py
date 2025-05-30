@@ -1,6 +1,7 @@
 import json
 from torchvision import transforms
 from torchvision.datasets import ImageFolder
+from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 
 
@@ -18,7 +19,7 @@ class ListDataset(Dataset):
 
     def __getitem__(self, idx):
         path, label = self.samples[idx]
-        image = ImageFolder.loader(path)
+        image = Image.open(path).convert("RGB")
         if self.transform:
             image = self.transform(image)
         return image, label
