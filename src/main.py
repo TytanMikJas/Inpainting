@@ -2,9 +2,9 @@ import sys
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
-from scripts.etl_process.ETLProcessor import ETLProcessor
-from scripts.training.TrainScheduler import TrainScheduler, SingleTrainEvent
-from models.vae.vae import VAE
+from src.scripts.etl_process.ETLProcessor import ETLProcessor
+from src.scripts.training.TrainScheduler import TrainScheduler, SingleTrainEvent
+from src.models.vae.vae import VAE
 
 
 def run_etl():
@@ -20,30 +20,30 @@ def run_etl():
 
 
 def run_dummy_training():
-    print("Running dummy training...")
+    print("Running training...")
 
-    num_samples = 100
-    images = torch.randn(num_samples, 3, 64, 64)
-    dataset = TensorDataset(images)
-
-    batch_size = 16
-    train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
-    test_loader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
+    etl = ETLProcessor(
+        kaggle_dataset="mahmudulhaqueshawon/cat-image",
+        raw_dir="data/raw_data",
+        split_dir="data/data_splits",
+    )
+    train_loader, val_loader, test_loader = etl.process()
 
     model = VAE(
         input_dim=3,
-        hidden_dim=32,
-        residual_hiddens=32,
+        hidden_dim=128,
+        residual_hiddens=64,
         num_residual_layers=2,
-        latent_dim=16,
+        latent_dim=256,
     )
+
+    model = model.to("cuda" if torch.cuda.is_available() else "cpu")
 
     loss_fn = nn.MSELoss(reduction="sum")
 
     events = [
         SingleTrainEvent(
-            epochs=1,
+            epochs=20,
             train_loader=train_loader,
             val_loader=val_loader,
             test_loader=test_loader,
@@ -54,7 +54,7 @@ def run_dummy_training():
             save_dir="models/test_run",
         ),
         SingleTrainEvent(
-            epochs=1,
+            epochs=20,
             train_loader=train_loader,
             val_loader=val_loader,
             test_loader=test_loader,
