@@ -11,9 +11,9 @@ class NoisyDataset(Dataset):
         return len(self.clean)
 
     def __getitem__(self, idx):
-        clean_img, *rest = self.clean[idx]
+        clean_img, _ = self.clean[idx]
 
         noise = torch.randn_like(clean_img) * self.noise_level
         noisy_img = clean_img + noise
         noisy_img = noisy_img.clamp(0.0, 1.0)
-        return noisy_img, clean_img, *rest
+        return noisy_img, clean_img

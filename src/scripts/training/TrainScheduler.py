@@ -5,8 +5,8 @@ import torch
 import os
 import json
 from torch.utils.data import RandomSampler
-from scripts.training.Trainer import Trainer
-from scripts.training.NoiseDataset import NoisyDataset
+from src.scripts.training.Trainer import Trainer
+from src.scripts.training.NoiseDataset import NoisyDataset
 
 
 @dataclass

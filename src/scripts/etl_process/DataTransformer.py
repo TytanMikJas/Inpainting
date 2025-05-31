@@ -39,7 +39,7 @@ class DataTransformer:
     """
 
     def __init__(
-        self, image_size: int = 64, batch_size: int = 32, num_workers: int = 4
+        self, image_size: int = 64, batch_size: int = 256, num_workers: int = 4
     ):
         self.image_size = image_size
         self.batch_size = batch_size
