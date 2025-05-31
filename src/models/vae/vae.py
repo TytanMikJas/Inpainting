@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 from typing import Tuple
-from src.models.baseline.encoder import Encoder
-from src.models.baseline.decoder import Decoder
+from src.models.baseline.Encoder import Encoder
+from src.models.baseline.Decoder import Decoder
 
 
 class VAE(nn.Module):
@@ -14,6 +14,7 @@ class VAE(nn.Module):
         num_residual_layers: int,
         latent_dim: int,
         device: str = "cuda" if torch.cuda.is_available() else "cpu",
+        image_size: int = 64,
     ):
         """
         Variational Autoencoder (VAE) for 64x64 RGB images.
@@ -29,10 +30,10 @@ class VAE(nn.Module):
         self.to(device)
         self.hidden_dim = hidden_dim
 
-        self._input_shape = (input_dim, 64, 64)
+        self._input_shape = (input_dim, image_size, image_size)
 
         # Encoder
-        self._encoder = Encoder(
+        self.encoder = Encoder(
             in_channels=input_dim,
             num_hiddens=hidden_dim,
             num_residual_layers=num_residual_layers,
@@ -41,7 +42,7 @@ class VAE(nn.Module):
 
         # Calculate flattened feature map size from encoder output
         # 64x64 → 32x32 → 16x16 due to Conv2d stride=2 layers
-        self._feature_map_size = 16
+        self._feature_map_size = image_size / 4
         self._flat_dim = hidden_dim * self._feature_map_size * self._feature_map_size
 
         # Latent Space
@@ -66,7 +67,7 @@ class VAE(nn.Module):
         return mu + std * epsilon
 
     def encode(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-        x = self._encoder(x)
+        x = self.encoder(x)
         x = x.view(x.shape[0], -1)
 
         return self._fc_mu(x), self._fc_logvar(x)

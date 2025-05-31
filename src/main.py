@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from src.scripts.etl_process.ETLProcessor import ETLProcessor
 from src.scripts.training.TrainScheduler import TrainScheduler, SingleTrainEvent
-from src.models.vae.vae import VAE
+from src.models.vae.VAE import VAE
 
 
 def run_etl():
@@ -80,6 +80,6 @@ if __name__ == "__main__":
         run_training()
     else:
         print(
-            "Usage: python main.py <command>\nCommands:\netl - Run ETL process\nrun_dummy_training - Run dummy training"
+            "Usage: python main.py <command>\nCommands:\netl - Run ETL process\nrun_training - Run training"
         )
         sys.exit(1)
