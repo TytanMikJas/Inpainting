@@ -6,7 +6,7 @@ import os
 import json
 from torch.utils.data import RandomSampler
 from src.scripts.training.Trainer import Trainer
-from src.scripts.training.NoiseDataset import NoisyDataset
+from src.scripts.training.MaskDataset import MaskedDataset
 
 
 @dataclass
@@ -22,7 +22,7 @@ class SingleTrainEvent:
     lr: float
     loss_fn: Callable
     loss_fn_args: Optional[Tuple[Any]]
-    noise_level: float = 0.0
+    mask_size: float = 0.0
     save_dir: Optional[str] = None
 
 
@@ -55,12 +55,12 @@ class TrainScheduler:
 
     def prepare_event(self, event: SingleTrainEvent):
         print(
-            f"[INFO] Preparing event: epochs={event.epochs}, lr={event.lr}, noise={event.noise_level}"
+            f"[INFO] Preparing event: epochs={event.epochs}, lr={event.lr}, mask_ratio={event.mask_size}"
         )
 
-        noisy_train_ds = NoisyDataset(event.train_loader.dataset, event.noise_level)
-        noisy_val_ds = NoisyDataset(event.val_loader.dataset, event.noise_level)
-        noisy_test_ds = NoisyDataset(event.test_loader.dataset, event.noise_level)
+        masked_train_ds = MaskedDataset(event.train_loader.dataset, event.mask_size)
+        masked_val_ds = MaskedDataset(event.val_loader.dataset, event.mask_size)
+        masked_test_ds = MaskedDataset(event.test_loader.dataset, event.mask_size)
 
         def clone_loader(orig_loader, new_ds):
             sampler = orig_loader.sampler
@@ -75,9 +75,9 @@ class TrainScheduler:
                 drop_last=orig_loader.drop_last,
             )
 
-        self.train_loader = clone_loader(event.train_loader, noisy_train_ds)
-        self.val_loader = clone_loader(event.val_loader, noisy_val_ds)
-        self.test_loader = clone_loader(event.test_loader, noisy_test_ds)
+        self.train_loader = clone_loader(event.train_loader, masked_train_ds)
+        self.val_loader = clone_loader(event.val_loader, masked_val_ds)
+        self.test_loader = clone_loader(event.test_loader, masked_test_ds)
 
     def run_event(self, event: SingleTrainEvent, index: int):
         """Prepare data, train model, and save results."""

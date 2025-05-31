@@ -1,7 +1,6 @@
 import sys
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader, TensorDataset
 from src.scripts.etl_process.ETLProcessor import ETLProcessor
 from src.scripts.training.TrainScheduler import TrainScheduler, SingleTrainEvent
 from src.models.vae.vae import VAE
@@ -19,7 +18,7 @@ def run_etl():
     print("ETL process completed successfully.")
 
 
-def run_dummy_training():
+def run_training():
     print("Running training...")
 
     etl = ETLProcessor(
@@ -43,33 +42,33 @@ def run_dummy_training():
 
     events = [
         SingleTrainEvent(
-            epochs=20,
+            epochs=10,
             train_loader=train_loader,
             val_loader=val_loader,
             test_loader=test_loader,
             lr=1e-3,
             loss_fn=loss_fn,
             loss_fn_args=None,
-            noise_level=0.1,
+            mask_size=0.2,
             save_dir="models/test_run",
         ),
-        SingleTrainEvent(
-            epochs=20,
-            train_loader=train_loader,
-            val_loader=val_loader,
-            test_loader=test_loader,
-            lr=1e-3,
-            loss_fn=loss_fn,
-            loss_fn_args=None,
-            noise_level=0.2,
-            save_dir="models/test_run",
-        ),
+        # SingleTrainEvent(
+        #     epochs=20,
+        #     train_loader=train_loader,
+        #     val_loader=val_loader,
+        #     test_loader=test_loader,
+        #     lr=1e-3,
+        #     loss_fn=loss_fn,
+        #     loss_fn_args=None,
+        #     mask_size=0.2,
+        #     save_dir="models/test_run",
+        # ),
     ]
 
     scheduler = TrainScheduler(events, model, model_name="test_vae")
     scheduler.start_training()
 
-    print("Dummy training completed.")
+    print("Training completed.")
 
 
 if __name__ == "__main__":
@@ -77,8 +76,8 @@ if __name__ == "__main__":
     print(f"Command received: {command}")
     if command == "run_etl":
         run_etl()
-    elif command == "run_dummy_training":
-        run_dummy_training()
+    elif command == "run_training":
+        run_training()
     else:
         print(
             "Usage: python main.py <command>\nCommands:\netl - Run ETL process\nrun_dummy_training - Run dummy training"

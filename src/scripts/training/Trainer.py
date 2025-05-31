@@ -107,10 +107,14 @@ class Trainer:
                 batches += 1
 
         if batches > 0:
-            val_metrics["loss"].append(total_loss / batches)
-            val_metrics["mse"].append(total_mse / batches)
-            val_metrics["kl"].append(total_kl / batches)
+            loss = total_loss / batches
+            mse = total_mse / batches
+            kl = total_kl / batches
+            val_metrics["loss"].append(loss)
+            val_metrics["mse"].append(mse)
+            val_metrics["kl"].append(kl)
             val_metrics["step"].append(global_step)
+            print(f"Validation - Loss: {loss:.4f}, MSE: {mse:.4f}, KL: {kl:.4f}")
 
     def plot_metrics(
         self, train_metrics: Dict[str, List[float]], val_metrics: Dict[str, List[float]]

@@ -1,5 +1,5 @@
 run_etl:
-	python src/main.py run_etl
+	python -m src.main etl
 
-run_dummy_training:
-	python src/main.py run_dummy_training
+run_training:
+	python -m src.main run_training
