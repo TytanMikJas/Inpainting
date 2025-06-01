@@ -1,9 +1,9 @@
 import torch
 import torch.nn as nn
 from typing import Tuple
-from src.models.baseline.encoder import Encoder
-from src.models.baseline.decoder import Decoder
-from src.models.vqvae.quantizer import Quantizer
+from src.models.baseline.Encoder import Encoder
+from src.models.baseline.Decoder import Decoder
+from src.models.vqvae.Quantizer import Quantizer
 
 
 class VQVAE(nn.Module):
@@ -31,7 +31,7 @@ class VQVAE(nn.Module):
         super(VQVAE, self).__init__()
 
         # Encoder
-        self._encoder = Encoder(
+        self.encoder = Encoder(
             in_channels=input_dim,
             num_hiddens=hidden_dim,
             num_residual_layers=num_residual_layers,
