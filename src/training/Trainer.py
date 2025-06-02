@@ -199,12 +199,14 @@ class Trainer:
         ax1.plot(train_metrics["step"], train_metrics["loss"], label="train loss")
         ax1.plot(val_metrics["step"], val_metrics["loss"], label="val loss")
         ax1.set_ylabel("Loss")
+        ax3.set_xlabel("Step")
         ax1.grid()
         ax1.legend()
 
         ax2.plot(train_metrics["step"], train_metrics["mse"], label="train mse")
         ax2.plot(val_metrics["step"], val_metrics["mse"], label="val mse")
         ax2.set_ylabel("MSE")
+        ax3.set_xlabel("Step")
         ax2.grid()
         ax2.legend()
 
@@ -235,8 +237,11 @@ class Trainer:
         ax4.set_xlabel("Step")
         ax4.grid()
         ax4.legend()
-        
-        fig.suptitle(f"{model_name}", fontsize=16)
+
+        num_epochs = max(train_metrics["step"])
+
+        for ax in [ax1, ax2, ax3, ax4]:
+            ax.set_xticks(range(1, num_epochs + 1))
 
         fig.tight_layout()
 

@@ -15,13 +15,13 @@ CONFIG = {
     "residual_hiddens": 64,
     "lr": 1e-3,
     "weight_decay": 1e-4,
-    "epochs": 30,
+    "epochs": 40,
     "device": "cuda" if torch.cuda.is_available() else "cpu",
     "mask_size": 0.35,
     "param_grid": {
-        "num_residual_layers": [1, 2],
-        "num_embeddings": [256, 512, 1024],
-        "embedding_dim": [64, 128 ,256],
+        "num_residual_layers": [2],
+        "num_embeddings": [32, 64],
+        "embedding_dim": [32, 64],
     },
     "save_dir": Path("models/reconstruction/vqvae/"),
     "dataset_config": {
@@ -57,7 +57,11 @@ def main():
     print(f"Total configurations to run: {total_configs}")
 
     for i, (layers, num_embeddings, embedding_dim) in enumerate(param_combinations):
-        model_name = f"vae_layers{layers}_ne{num_embeddings}_ed{embedding_dim}".replace(".", "")
+        model_name = (
+            f"vqvae_layers{layers}_ne{num_embeddings}_ed{embedding_dim}".replace(
+                ".", ""
+            )
+        )
         print(f"\n[{i + 1}/{total_configs}] Running: {model_name}")
 
         model = VQVAE(
@@ -68,6 +72,7 @@ def main():
             num_embeddings=num_embeddings,
             embedding_dim=embedding_dim,
             commitment_cost=0.25,
+            device=CONFIG["device"],
         )
         model = model.to(CONFIG["device"])
 
