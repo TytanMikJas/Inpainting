@@ -175,3 +175,7 @@ cython_debug/
 
 data/raw_data/cats
 data/data_splits
+models/ssl/byol/
+models/reconstruction/vae
+models/reconstruction/vqvae
+models/reconstruction/vae-byol

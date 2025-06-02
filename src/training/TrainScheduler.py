@@ -5,8 +5,8 @@ import torch
 import os
 import json
 from torch.utils.data import RandomSampler
-from src.scripts.training.Trainer import Trainer
-from src.scripts.training.MaskDataset import MaskedDataset
+from src.training.Trainer import Trainer
+from src.training.MaskDataset import MaskedDataset
 
 
 @dataclass
@@ -18,7 +18,6 @@ class SingleTrainEvent:
     epochs: int
     train_loader: DataLoader
     val_loader: DataLoader
-    test_loader: DataLoader
     lr: float
     loss_fn: Callable
     loss_fn_args: Optional[Tuple[Any]]
@@ -60,7 +59,6 @@ class TrainScheduler:
 
         masked_train_ds = MaskedDataset(event.train_loader.dataset, event.mask_size)
         masked_val_ds = MaskedDataset(event.val_loader.dataset, event.mask_size)
-        masked_test_ds = MaskedDataset(event.test_loader.dataset, event.mask_size)
 
         def clone_loader(orig_loader, new_ds):
             sampler = orig_loader.sampler
@@ -77,7 +75,6 @@ class TrainScheduler:
 
         self.train_loader = clone_loader(event.train_loader, masked_train_ds)
         self.val_loader = clone_loader(event.val_loader, masked_val_ds)
-        self.test_loader = clone_loader(event.test_loader, masked_test_ds)
 
     def run_event(self, event: SingleTrainEvent, index: int):
         """Prepare data, train model, and save results."""
