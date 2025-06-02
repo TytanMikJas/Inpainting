@@ -19,11 +19,12 @@ class MaskedDataset(Dataset):
         masked_img = clean_img.clone()
 
         _, H, W = clean_img.shape
-        mask_size = int(min(H, W) * self.mask_size_ratio)
+        random_ratio = random.uniform(0.15, self.mask_size_ratio)
+        mask_size = int(min(H, W) * random_ratio)
 
         top = random.randint(0, H - mask_size)
         left = random.randint(0, W - mask_size)
 
-        masked_img[:, top : top + mask_size, left : left + mask_size] = 0
+        masked_img[:, top : top + mask_size, left : left + mask_size] = 0.5
 
         return masked_img, clean_img

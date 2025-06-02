@@ -28,9 +28,11 @@ class BYOL(nn.Module):
         hidden_dim: int,
         num_residual_layers: int,
         residual_hiddens: int,
-        device: str,
-        image_size: int = 64,
+        mlp_hidden_dim: int = 1024,
+        mask_size_ratio: float = 0.0,
         tau: float = 0.99,
+        device: str = "cpu",
+        image_size: int = 64,
     ):
         super().__init__()
 
@@ -45,40 +47,44 @@ class BYOL(nn.Module):
         self.flat_dim = hidden_dim * feature_map_size * feature_map_size
 
         self.online_projector = MLP(
-            input_dim=self.flat_dim, hidden_dim=512, output_dim=512, plain_last=False
+            input_dim=self.flat_dim,
+            hidden_dim=mlp_hidden_dim,
+            output_dim=mlp_hidden_dim,
+            plain_last=False,
         )
         self.online_predictor = MLP(
-            input_dim=512, hidden_dim=512, output_dim=512, plain_last=True
+            input_dim=mlp_hidden_dim,
+            hidden_dim=mlp_hidden_dim,
+            output_dim=mlp_hidden_dim,
+            plain_last=True,
         )
 
         self.target_encoder = self._copy_frozen_model(self.online_encoder)
         self.target_projector = self._copy_frozen_model(self.online_projector)
 
         self.device = device
-        self.view_generator = BYOLViewGenerator(self.device)
+        self.view_generator = BYOLViewGenerator(
+            device=self.device, image_size=image_size, mask_size_ratio=mask_size_ratio
+        )
         self.tau = tau
 
     def forward(self, x_batch: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         v, v_prim = self.view_generator(x_batch)
 
         q1 = self.online_encoder(v)
-        print("q1", q1.mean().item(), q1.std().item())
         q1 = torch.flatten(q1, 1)
         q1 = self.online_predictor(self.online_projector(q1))
 
         q2 = self.online_encoder(v_prim)
-        print("q2", q2.mean().item(), q2.std().item())
         q2 = torch.flatten(q2, 1)
         q2 = self.online_predictor(self.online_projector(q2))
 
         with torch.no_grad():
             z1 = self.target_encoder(v_prim)
-            print("z1", z1.mean().item(), z1.std().item())
             z1 = torch.flatten(z1, 1)
             z1 = self.target_projector(z1)
 
             z2 = self.target_encoder(v)
-            print("z2", z2.mean().item(), z2.std().item())
             z2 = torch.flatten(z2, 1)
             z2 = self.target_projector(z2)
 

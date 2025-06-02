@@ -175,3 +175,4 @@ cython_debug/
 
 data/raw_data/cats
 data/data_splits
+models/ssl/byol/
