@@ -15,8 +15,8 @@ class Trainer:
     def _initialize_metrics(
         self,
     ) -> Tuple[Dict[str, List[float]], Dict[str, List[float]]]:
-        train_metrics = {"loss": [], "mse": [], "kl": [], "step": []}
-        val_metrics = {"loss": [], "mse": [], "kl": [], "step": []}
+        train_metrics = {"loss": [], "mse": [], "partial_loss": [], "step": []}
+        val_metrics = {"loss": [], "mse": [], "partial_loss": [], "step": []}
         return train_metrics, val_metrics
 
     def _train_epoch(
@@ -39,18 +39,19 @@ class Trainer:
             out = model(noisy)
             if isinstance(out, dict):
                 recon = out["recon"]
-                kl = out.get("partial_loss", torch.tensor(0.0, device=noisy.device))
+                partial_loss = out.get("partial_loss", torch.tensor(0.0, device=noisy.device))
             else:
                 recon = out
-                kl = torch.tensor(0.0, device=noisy.device)
+                partial_loss = torch.tensor(0.0, device=noisy.device)
 
             recon_loss = loss_fn(recon, clean)
-            loss = recon_loss + kl
+            loss = recon_loss + partial_loss
             loss.backward()
             optimizer.step()
 
             batch_size = clean.size(0)
             train_metrics["loss"].append(loss.item())
+            print(f"Step {global_step}: Loss = {loss.item():.6f}")
             train_metrics["mse"].append(
                 nn.functional.mse_loss(
                     recon.view(batch_size, -1),
@@ -58,8 +59,8 @@ class Trainer:
                     reduction="mean",
                 ).item()
             )
-            train_metrics["kl"].append(
-                kl.item() if isinstance(kl, torch.Tensor) else float(kl)
+            train_metrics["partial_loss"].append(
+                partial_loss.item() if isinstance(partial_loss, torch.Tensor) else float(partial_loss)
             )
             train_metrics["step"].append(global_step)
 
@@ -78,7 +79,7 @@ class Trainer:
         global_step: int,
     ) -> None:
         model.eval()
-        total_loss = total_mse = total_kl = 0.0
+        total_loss = total_mse = total_partial_loss = 0.0
         batches = 0
 
         with torch.no_grad():
@@ -89,10 +90,10 @@ class Trainer:
                 out = model(noisy)
                 if isinstance(out, dict):
                     recon = out["recon"]
-                    kl = out.get("partial_loss", torch.tensor(0.0, device=noisy.device))
+                    partial_loss = out.get("partial_loss", torch.tensor(0.0, device=noisy.device))
                 else:
                     recon = out
-                    kl = torch.tensor(0.0, device=noisy.device)
+                    partial_loss = torch.tensor(0.0, device=noisy.device)
 
                 recon_loss = loss_fn(recon, clean)
                 mse = nn.functional.mse_loss(
@@ -101,20 +102,20 @@ class Trainer:
                     reduction="mean",
                 )
 
-                total_loss += (recon_loss + kl).item()
+                total_loss += (recon_loss + partial_loss).item()
                 total_mse += mse.item()
-                total_kl += kl.item()
+                total_partial_loss += partial_loss.item()
                 batches += 1
 
         if batches > 0:
             loss = total_loss / batches
             mse = total_mse / batches
-            kl = total_kl / batches
+            partial_loss = total_partial_loss / batches
             val_metrics["loss"].append(loss)
             val_metrics["mse"].append(mse)
-            val_metrics["kl"].append(kl)
+            val_metrics["partial_loss"].append(partial_loss)
             val_metrics["step"].append(global_step)
-            print(f"Validation - Loss: {loss:.4f}, MSE: {mse:.4f}, KL: {kl:.4f}")
+            print(f"Validation - Loss: {loss:.4f}, MSE: {mse:.4f}, partial_loss: {partial_loss:.4f}")
 
     def plot_metrics(
         self, train_metrics: Dict[str, List[float]], val_metrics: Dict[str, List[float]]
@@ -134,9 +135,9 @@ class Trainer:
         ax2.grid()
         ax2.legend()
 
-        ax3.plot(train_metrics["step"], train_metrics["kl"], label="train kl")
-        ax3.plot(val_metrics["step"], val_metrics["kl"], label="val kl")
-        ax3.set_ylabel("KL")
+        ax3.plot(train_metrics["step"], train_metrics["partial_loss"], label="train partial loss")
+        ax3.plot(val_metrics["step"], val_metrics["partial_loss"], label="val partial loss")
+        ax3.set_ylabel("Partial Loss")
         ax3.set_xlabel("Step")
         ax3.grid()
         ax3.legend()

@@ -5,8 +5,8 @@ import torch
 import os
 import json
 from torch.utils.data import RandomSampler
-from src.scripts.training.Trainer import Trainer
-from src.scripts.training.MaskDataset import MaskedDataset
+from src.training.Trainer import Trainer
+from src.training.MaskDataset import MaskedDataset
 
 
 @dataclass

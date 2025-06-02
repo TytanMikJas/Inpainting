@@ -2,7 +2,7 @@ import sys
 import torch
 import torch.nn as nn
 from src.scripts.etl_process.ETLProcessor import ETLProcessor
-from src.scripts.training.TrainScheduler import TrainScheduler, SingleTrainEvent
+from src.training.TrainScheduler import TrainScheduler, SingleTrainEvent
 from src.models.vae.VAE import VAE
 
 
@@ -42,27 +42,16 @@ def run_training():
 
     events = [
         SingleTrainEvent(
-            epochs=10,
+            epochs=50,
             train_loader=train_loader,
             val_loader=val_loader,
             test_loader=test_loader,
             lr=1e-3,
             loss_fn=loss_fn,
             loss_fn_args=None,
-            mask_size=0.2,
-            save_dir="models/test_run",
+            mask_size=0.35,
+            save_dir="models/reconstruction/vae",
         ),
-        # SingleTrainEvent(
-        #     epochs=20,
-        #     train_loader=train_loader,
-        #     val_loader=val_loader,
-        #     test_loader=test_loader,
-        #     lr=1e-3,
-        #     loss_fn=loss_fn,
-        #     loss_fn_args=None,
-        #     mask_size=0.2,
-        #     save_dir="models/test_run",
-        # ),
     ]
 
     scheduler = TrainScheduler(events, model, model_name="test_vae")
