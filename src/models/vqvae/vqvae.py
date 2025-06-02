@@ -16,6 +16,7 @@ class VQVAE(nn.Module):
         num_embeddings: int,
         embedding_dim: int,
         commitment_cost: float,
+        device: str,
     ):
         """
         Vector Quantized Variational Autoencoder (VQVAE) for 64x64 RGB images.
@@ -27,9 +28,11 @@ class VQVAE(nn.Module):
             num_embeddings (int): Number of embeddings in the codebook.
             embedding_dim (int): Dimension of each embedding vector.
             commitment_cost (float): Commitment cost for the VQ layer.
+            device (str): Device to run the model on ('cpu' or 'cuda').
         """
         super(VQVAE, self).__init__()
 
+        self.device = device
         # Encoder
         self.encoder = Encoder(
             in_channels=input_dim,
