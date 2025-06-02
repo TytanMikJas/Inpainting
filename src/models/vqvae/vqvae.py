@@ -71,7 +71,7 @@ class VQVAE(nn.Module):
                 - Perplexity of the quantization.
         """
         # Encoding
-        z = self._encoder(x)
+        z = self.encoder(x)
         z = self._pre_vq_conv(z)
 
         # Quantization
@@ -83,6 +83,6 @@ class VQVAE(nn.Module):
         return {
             "recon": reconstructed,
             "partial_loss": quant_loss,
-            "perplexity": perplexity,
+            "num_active_dims": perplexity,
             "encodings": encodings,
         }

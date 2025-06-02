@@ -42,7 +42,7 @@ class VAE(nn.Module):
 
         # Calculate flattened feature map size from encoder output
         # 64x64 → 32x32 → 16x16 due to Conv2d stride=2 layers
-        self._feature_map_size = image_size / 4
+        self._feature_map_size = image_size // 4
         self._flat_dim = hidden_dim * self._feature_map_size * self._feature_map_size
 
         # Latent Space
