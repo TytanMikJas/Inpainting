@@ -1,3 +1,4 @@
+import time
 from typing import Callable, Dict, List, Tuple
 from matplotlib import pyplot as plt
 import torch
@@ -53,6 +54,7 @@ class Trainer:
             "partial_loss": [],
             "step": [],
             "num_active_dims": [],
+            "time": [],
         }
         val_metrics = {
             "loss": [],
@@ -60,6 +62,7 @@ class Trainer:
             "partial_loss": [],
             "step": [],
             "num_active_dims": [],
+            "time": []
         }
         return train_metrics, val_metrics
 
@@ -271,6 +274,7 @@ class Trainer:
 
         for epoch in range(epochs):
             print(f"Epoch {epoch + 1}/{epochs}")
+            start_time = time.time()
             self._train_epoch(
                 model,
                 train_loader,
@@ -279,7 +283,10 @@ class Trainer:
                 train_metrics,
                 mask_ratio,
             )
+            train_metrics['time'].append(time.time() - start_time)
+            start_val_time = time.time()
             loss = self._validate_model(model, val_loader, loss_fn, val_metrics)
+            val_metrics['time'].append(time.time() - start_val_time)
             train_metrics["step"].append(epoch)
             val_metrics["step"].append(epoch)
             if loss < best_val_loss:

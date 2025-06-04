@@ -23,6 +23,10 @@ class SingleTrainEvent:
     loss_fn_args: Optional[Tuple[Any]]
     mask_size: float = 0.0
     save_dir: Optional[str] = None
+    dropout: Optional[float] = None
+    weight_decay=0,
+    model_name='default',
+    vis_dir='.'
 
 
 class TrainScheduler:
@@ -90,6 +94,11 @@ class TrainScheduler:
             val_loader=self.val_loader,
             lr=event.lr,
             loss_fn=event.loss_fn,
+            mask_ratio=event.mask_size,
+            weight_decay=0,
+            model_name='',
+            save_dir='.',
+            vis_dir='.'
         )
 
         model_path = os.path.join(save_dir, f"{self.model_name}_event{index}.pt")
@@ -103,3 +112,106 @@ class TrainScheduler:
         with open(metrics_path, "w") as fp:
             json.dump(metrics, fp, indent=2)
         print(f"Metrics saved to {metrics_path}")
+
+
+    def run_auto_event(self, target_event: SingleTrainEvent):
+        print("[AUTO] Starting auto curriculum training")
+        
+        max_epochs = target_event.epochs
+        final_noise = target_event.noise_level
+        full_train_data = target_event.train_loader.dataset
+        val_loader = target_event.val_loader
+        test_loader = target_event.test_loader
+        loss_fn = target_event.loss_fn
+        lr = target_event.lr
+
+        # Initial state
+        current_mask = 0.05  # Start small
+        current_data_frac = 0.1
+        used_epochs = 0
+        step_epochs = 10
+
+        previous_acc = 0.0
+
+        while used_epochs < max_epochs:
+            print(f"\n[AUTO] Epochs used: {used_epochs}/{max_epochs}")
+
+            # Create subset of dataset
+            subset_size = int(len(full_train_data) * current_data_frac)
+            indices = torch.randperm(len(full_train_data))[:subset_size]
+            subset = torch.utils.data.Subset(full_train_data, indices)
+            noisy_subset = MaskedDataset(subset, current_mask)
+
+            train_loader = DataLoader(
+                noisy_subset,
+                batch_size=target_event.train_loader.batch_size,
+                shuffle=True,
+                num_workers=0,
+            )
+
+            # Train small event
+            event = SingleTrainEvent(
+                epochs=step_epochs,
+                train_loader=train_loader,
+                val_loader=val_loader,
+                test_loader=test_loader,
+                lr=lr,
+                loss_fn=loss_fn,
+                loss_fn_args=target_event.loss_fn_args,
+                mask_size=current_mask,
+                dropout=target_event.dropout
+            )
+            self.run_event(event, index=used_epochs)
+
+            # Evaluate model (basic val accuracy estimate)
+            val_loss = self.trainer._validate_model(self.model, val_loader, loss_fn, {}, used_epochs)
+            acc = 1.0 - val_loss if val_loss is not None else 0.0
+
+            # Update epochs used
+            used_epochs += step_epochs
+
+            # Estimate improvement
+            improvement = acc - previous_acc
+            expected_progress = (current_mask / final_noise) * 0.1  # simplistic heuristic
+
+            print(f"[AUTO] Accuracy: {acc:.4f}, Improvement: {improvement:.4f}, Expected: {expected_progress:.4f}")
+
+            if acc < previous_acc + expected_progress:
+                # Too slow -> smaller step
+                current_data_frac = min(current_data_frac + 0.1, 1.0)
+                current_mask = min(current_mask + 0.05, final_noise)
+                step_epochs = min(15, max_epochs - used_epochs)
+            else:
+                # Doing well -> larger step
+                current_data_frac = min(current_data_frac + 0.2, 1.0)
+                current_mask = min(current_mask + 0.1, final_noise)
+                step_epochs = min(25, max_epochs - used_epochs)
+
+            previous_acc = acc
+
+            if current_data_frac >= 1.0 and current_mask >= final_noise:
+                print("[AUTO] Curriculum completed early.")
+                break
+
+        print("[AUTO] Final fine-tuning on full dataset")
+        final_dataset = MaskedDataset(full_train_data, final_noise)
+        full_train_loader = DataLoader(
+            final_dataset,
+            batch_size=target_event.train_loader.batch_size,
+            shuffle=True,
+            num_workers=0,
+        )
+
+        final_event = SingleTrainEvent(
+            epochs=max_epochs - used_epochs,
+            train_loader=full_train_loader,
+            val_loader=val_loader,
+            test_loader=test_loader,
+            lr=lr,
+            loss_fn=loss_fn,
+            loss_fn_args=target_event.loss_fn_args,
+            noise_level=final_noise,
+            dropout=target_event.dropout
+        )
+        self.run_event(final_event, index="final")
+        print("[AUTO] Auto curriculum training completed.")
