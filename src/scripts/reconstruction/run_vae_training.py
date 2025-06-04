@@ -20,7 +20,7 @@ CONFIG = {
     "mask_size": 0.35,
     "param_grid": {
         "num_residual_layers": [1, 2],
-        "latent_dim": [512],
+        "latent_dim": [256, 512, 1024, 2048],
     },
     "save_dir": Path("models/reconstruction/vae/"),
     "dataset_config": {
