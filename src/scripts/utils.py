@@ -78,9 +78,9 @@ def evaluate_model(model, test_loader, device):
     avg_ssim = total_ssim / num_samples
     avg_psnr = total_psnr / num_samples
 
-    print(f"Average MSE: {avg_mse:.4f}")
-    print(f"Average SSIM: {avg_ssim:.4f}")
-    print(f"Average PSNR: {avg_psnr:.4f}")
+    print(f"Test MSE: {avg_mse:.4f}")
+    print(f"Test SSIM: {avg_ssim:.4f}")
+    print(f"Test PSNR: {avg_psnr:.4f}")
 
 def show_images(original, noisy, reconstructed, n=8):
 

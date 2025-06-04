@@ -12,6 +12,8 @@ class MaskedDataset(Dataset):
         self.clean = clean_dataset
         self.mask_size_ratio = mask_size_ratio
 
+        random.seed(0)
+
         self.masks = []
         for _ in range(len(self.clean)):
             H, W = self.clean[0][0].shape[1:3]
