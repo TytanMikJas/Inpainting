@@ -15,7 +15,7 @@ CONFIG = {
     "residual_hiddens": 64,
     "lr": 1e-3,
     "weight_decay": 1e-4,
-    "epochs": 40,
+    "epochs": 30,
     "device": "cuda" if torch.cuda.is_available() else "cpu",
     "mask_size": 0.35,
     "param_grid": {
