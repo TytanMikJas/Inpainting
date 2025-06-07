@@ -8,7 +8,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 
-from src.models.byol.BYOL import BYOL
+from src.models.ssl.byol.BYOL import BYOL
 from src.scripts.etl_process.ETLProcessor import ETLProcessor
 
 

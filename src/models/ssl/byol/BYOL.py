@@ -2,9 +2,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from typing import Tuple
-from src.models.baseline.Encoder import Encoder
-from src.models.byol.MLP import MLP
-from src.models.byol.BYOLViewGenerator import BYOLViewGenerator
+from src.models.baseline.encoder import Encoder
+from src.models.ssl.MLP import MLP
+from src.models.ssl.ViewGenerator import ViewGenerator
 from copy import deepcopy
 
 
@@ -63,8 +63,8 @@ class BYOL(nn.Module):
         self.target_projector = self._copy_frozen_model(self.online_projector)
 
         self.device = device
-        self.view_generator = BYOLViewGenerator(
-            device=self.device, image_size=image_size, mask_size_ratio=mask_size_ratio
+        self.view_generator = ViewGenerator(
+            mode='byol', device=self.device, image_size=image_size, mask_size_ratio=mask_size_ratio
         )
         self.tau = tau
 
@@ -92,6 +92,9 @@ class BYOL(nn.Module):
         z = torch.cat([z1, z2], dim=0)
 
         return q, z
+    
+    def forward_repr(self, x: torch.Tensor) -> torch.Tensor:
+        return self.online_encoder(x)
 
     def byol_loss(self, q: torch.Tensor, z_prim: torch.Tensor) -> torch.Tensor:
         q = F.normalize(q, dim=1)
