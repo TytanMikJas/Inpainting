@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 from typing import Tuple
-from src.models.baseline.Encoder import Encoder
-from src.models.baseline.Decoder import Decoder
+from src.models.baseline.encoder import Encoder
+from src.models.baseline.decoder import Decoder
 
 
 class VAE(nn.Module):
