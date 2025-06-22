@@ -12,3 +12,9 @@ run_byol:
 
 run_finetune:
 	PYTHONPATH=. python src/scripts/finetune/run_vae_finetune.py barlow_twins
+
+run_treevi:
+	PYTHONPATH=. python src/scripts/reconstruction/run_treevi_training.py
+
+run_pygtreevi:
+	PYTHONPATH=. python src/scripts/reconstruction/run_pygtreevi_training.py

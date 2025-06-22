@@ -17,7 +17,7 @@ def _compute_cholesky_tensor(
     parent: torch.LongTensor,      
     gamma_dict: Dict[Tuple[int,int], torch.Tensor],  
     device: torch.device,
-    eps: float = 1e-8
+    eps: float = 1e-3
 ) -> torch.Tensor:
     """    
     Returns tensor L of shape [B, B, D] such that:
@@ -59,7 +59,7 @@ def _compute_cholesky_tensor(
     under = torch.clamp(1.0 - sumsq, min=eps)   
     L[torch.arange(B), torch.arange(B), :] = torch.sqrt(under)
 
-    return L
+    return torch.nan_to_num(L, nan=eps*1e-2)  
 
 
 class VAEWithVIStructure(nn.Module):
@@ -220,7 +220,7 @@ class VAEWithVIStructure(nn.Module):
         gamma_dict: Dict[Tuple[int,int], torch.Tensor] = self.current_vi_structure.gamma
 
         L = _compute_cholesky_tensor(batch_size, latent_dim, parent, gamma_dict, device)
-
+        
         e = torch.randn((batch_size, latent_dim), device=device)
 
         v = torch.einsum("ijd,jd->id", L, e) 
@@ -262,10 +262,26 @@ class VAEWithVIStructure(nn.Module):
             self.current_vi_structure = self._init_chain_tree(num_nodes=x.size(0))
     
         mu, sigma = self.encode(x)
+        
+        # print("== Step 2: Check encoder output ==")
+        # print("Mu: mean", mu.mean().item(), "std", mu.std().item())
+        # print("Sigma: mean", sigma.mean().item(), "std", sigma.std().item())
+        # print("Any NaNs in mu?", torch.isnan(mu).any().item())
+        # print("Any NaNs in sigma?", torch.isnan(sigma).any().item())
+        # print("Sigma min/max:", sigma.min().item(), sigma.max().item())
+        
         z = self.tree_reparameterize(mu, sigma)
+            
+            
+        # print("== Step 3: Check latent z ==")
+        # print("Z: mean", z.mean().item(), "std", z.std().item())
+        # print("Any NaNs in z?", torch.isnan(z).any().item())
+        
         reconstruction = self.decode(z)
         
-        
+        # print("== Step 4: Check reconstructions ==")
+        # print("Reconstructed image: min", reconstruction.min().item(), "max", reconstruction.max().item())
+        # print("Any NaNs in recon?", torch.isnan(reconstruction).any().item())
         log_px_z = self._compute_reconstruction_loss(reconstruction, x)
         prior_log_prob = self._compute_prior_log_prob(z)
         entropy = self._compute_entropy(sigma, self.current_vi_structure)
