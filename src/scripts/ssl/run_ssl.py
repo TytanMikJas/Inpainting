@@ -1,10 +1,12 @@
 import sys
 import itertools
+
 from src.scripts.etl_process.ETLProcessor import ETLProcessor
 from src.scripts.ssl.SSLTrainer import SSLTrainer
 from src.models.ssl.byol.BYOL import BYOL
 from src.models.ssl.barlow_twins.BarlowTwins import BarlowTwins
-from src.scripts.ssl.Configuration import get_byol_config, get_barlow_twins_config
+from src.models.ssl.simclr.SimCLR import SimCLR
+from src.scripts.ssl.Configuration import get_byol_config, get_barlow_twins_config, get_simclr_config
 
 
 MODEL_REGISTRY = {
@@ -18,14 +20,20 @@ MODEL_REGISTRY = {
         "model_cls": BarlowTwins,
         "config_fn": get_barlow_twins_config,
         "loss_fn": lambda model, z1, z2: model.barlow_twins_loss(z1, z2),
-        "update_fn": lambda model: None,
+        "update_fn": lambda model: None,  
+    },
+    'simclr': {
+        "model_cls": SimCLR,
+        "config_fn": get_simclr_config,
+        "loss_fn": lambda model, z1, z2: model.loss(z1, z2),
+        "update_fn": lambda model: None
     },
 }
 
 
 def main():
     if len(sys.argv) != 2 or sys.argv[1] not in MODEL_REGISTRY:
-        print("Usage: python run_ssl.py [byol|barlow_twins]")
+        print("Usage: python run_ssl.py [byol|barlow_twins|simclr]")
         sys.exit(1)
 
     model_key = sys.argv[1]
@@ -44,7 +52,6 @@ def main():
 
     total_configs = len(param_combinations)
     print(f"Total configurations to run: {total_configs}")
-
     for i, combo in enumerate(param_combinations):
         model_args = {
             "input_dim": config["input_dim"],
@@ -54,9 +61,7 @@ def main():
         }
         model_args.update(dict(zip(param_keys, combo)))
 
-        model_name = f"{model_key}_" + "_".join(
-            f"{k}{str(v).replace('.', '')}" for k, v in zip(param_keys, combo)
-        )
+        model_name = f"{model_key}_" + "_".join(f"{k}{str(v).replace('.', '')}" for k, v in zip(param_keys, combo))
 
         print(f"\n[{i + 1}/{total_configs}] Running: {model_name}")
 

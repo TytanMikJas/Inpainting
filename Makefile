@@ -16,6 +16,13 @@ run_barlow_twins_finetune:
 run_byol_finetune:
 	PYTHONPATH=. python src/scripts/finetune/run_vae_finetune.py byol
 
+run_simclr:
+	PYTHONPATH=. python  src/scripts/ssl/run_ssl.py simclr
+
+run_simclr_finetune:
+	PYTHONPATH=. python src/scripts/finetune/run_simclr_finetune.py
+
+
 run_treevi:
 	PYTHONPATH=. python src/scripts/reconstruction/run_treevi_training.py
 
