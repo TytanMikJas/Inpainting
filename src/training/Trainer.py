@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
 from tqdm.auto import tqdm
 import os
 
@@ -62,7 +63,7 @@ class Trainer:
             "partial_loss": [],
             "step": [],
             "num_active_dims": [],
-            "time": [],
+            "time": []
         }
         return train_metrics, val_metrics
 
@@ -123,7 +124,6 @@ class Trainer:
             f"Train - Loss: {loss:.6f}, MSE: {mse:.6f}, Partial Loss: {partial_loss:.6f}, "
             f"Num Active Dims: {num_active_dims:.2f}"
         )
-
         train_metrics["loss"].append(loss)
         train_metrics["mse"].append(
             mse.item() if isinstance(mse, torch.Tensor) else float(mse)
@@ -141,6 +141,8 @@ class Trainer:
         val_loader: DataLoader,
         loss_fn: Callable,
         val_metrics: Dict[str, List[float]],
+        writer: SummaryWriter = None,
+        n_epoch: int = 0,
     ) -> None:
         model.eval()
         total_loss = total_mse = total_partial_loss = total_num_active_dims = 0.0
@@ -179,6 +181,11 @@ class Trainer:
         mse = total_mse / batches
         partial_loss = total_partial_loss / batches
         total_num_active_dims = total_num_active_dims / batches
+        if writer is not None:
+            writer.add_scalar('val_loss', loss, n_epoch)
+            writer.add_scalar('val_mse', mse, n_epoch)
+            writer.add_scalar('val_partial_loss', partial_loss, n_epoch)
+            writer.add_scalar('val_num_active_dims', total_num_active_dims, n_epoch)
         val_metrics["loss"].append(loss)
         val_metrics["mse"].append(mse)
         val_metrics["partial_loss"].append(partial_loss)
@@ -266,11 +273,16 @@ class Trainer:
         model_name: str,
         save_dir: str,
         vis_dir: str,
+        tensorboard: bool = False,
     ) -> None:
         train_metrics, val_metrics = self._initialize_metrics()
         optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
 
         best_val_loss = float("inf")
+        writer = SummaryWriter(
+            log_dir=f"logs/{model_name}",
+            flush_secs=30,
+        ) if tensorboard else None
 
         for epoch in range(epochs):
             print(f"Epoch {epoch + 1}/{epochs}")
@@ -283,10 +295,10 @@ class Trainer:
                 train_metrics,
                 mask_ratio,
             )
-            train_metrics["time"].append(time.time() - start_time)
+            train_metrics['time'].append(time.time() - start_time)
             start_val_time = time.time()
-            loss = self._validate_model(model, val_loader, loss_fn, val_metrics)
-            val_metrics["time"].append(time.time() - start_val_time)
+            loss = self._validate_model(model, val_loader, loss_fn, val_metrics, writer=writer, n_epoch=epoch)
+            val_metrics['time'].append(time.time() - start_val_time)
             train_metrics["step"].append(epoch)
             val_metrics["step"].append(epoch)
             if loss < best_val_loss:

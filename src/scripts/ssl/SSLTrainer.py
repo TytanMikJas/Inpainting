@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Callable, Optional, Type
 from tqdm import tqdm
@@ -6,6 +7,7 @@ from torch import nn, optim
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
+from torch.utils.tensorboard import SummaryWriter
 
 
 class SSLTrainer:
@@ -43,6 +45,7 @@ class SSLTrainer:
         update_fn: Optional[Callable] = None,
         lr: float = 1e-4,
         weight_decay: float = 1e-4,
+        tensorboard: bool = False,
     ) -> tuple[nn.Module, float]:
         """
         Train the SSL model.
@@ -50,6 +53,11 @@ class SSLTrainer:
         Returns:
             Trained model, final average loss.
         """
+        if tensorboard:
+            writer = SummaryWriter(
+                log_dir=f"logs/{model_name}",
+                flush_secs=30,
+            )
         model = self.model_cls(**self.model_args).to(self.device)
         optimiser = optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
         best_loss = float("inf")
@@ -61,7 +69,7 @@ class SSLTrainer:
             for x_batch, _ in tqdm(dataloader, desc=f"[{model_name}] Epoch {epoch}"):
                 x_batch = x_batch.to(self.device)
                 out1, out2 = model(x_batch)
-                loss = loss_fn(model, out1, out2)
+                loss = loss_fn(model, out1, out2) 
 
                 if not torch.isfinite(loss).all():
                     print("Non-finite loss encountered.")
@@ -78,6 +86,8 @@ class SSLTrainer:
 
             avg_loss = epoch_loss / len(dataloader)
             print(f"Epoch {epoch + 1}: Loss = {avg_loss:.8f}")
+            if tensorboard:
+                writer.add_scalar('loss', avg_loss, epoch)
 
             if avg_loss < best_loss:
                 best_loss = avg_loss
@@ -111,13 +121,11 @@ class SSLTrainer:
                     break
 
         embeddings = torch.cat(all_embeddings)[:max_samples]
-        reduced = TSNE(
-            n_components=2, perplexity=100, max_iter=1000, random_state=42
-        ).fit_transform(embeddings)
+        reduced = TSNE(n_components=2, perplexity=100, max_iter=1000, random_state=42).fit_transform(embeddings)
 
         plt.figure(figsize=(8, 8))
         plt.scatter(reduced[:, 0], reduced[:, 1], s=10, alpha=0.7, c="navy")
         plt.title(f"{model_name}\nFinal loss: {final_loss:.6f}")
         plt.tight_layout()
-        plt.savefig(self.vis_dir / f"{model_name}_tsne.png")
+        plt.savefig(self.vis_dir / f"{model_name}_tsne_{final_loss:.6f}.png")
         plt.close()
