@@ -25,21 +25,19 @@ Make sure your working directory is at the root level (i.e., the parent of `src/
 
 ### 1. Run the ETL pipeline
 
-This will process the dataset and prepare it for training:
+This will run the entire pipeline of downloading dataset, prerocessing and running training of every model:
 
 ```bash
-make run_etl
+make reproduce
 ```
 
-### 2. Train the baseline VAE model
+### Example: Train the baseline VAE model
 
 This command trains a standard VAE to serve as a baseline:
 
 ```bash
 make run_training
 ```
-
-You can modify or extend the training process using the `TrainScheduler` and plug in different models.
 
 ---
 
@@ -49,14 +47,23 @@ You can modify or extend the training process using the `TrainScheduler` and plu
 project-root/
 │
 ├── src/
-│   ├── main.py                  # Entry point for training & experiments
-│   ├── models/                  # All model definitions (VAE, VQ-VAE, etc.)
-│   └── scripts/
-│       ├── etl_process/         # Data loading and preprocessing logic
-│       ├── training/            # Training loop, scheduler, trainer, 
-│
-├── data/                        # Processed data, model checkpoints, metrics
-├── Makefile                     # Commands for running training/ETL
+│   ├── main.py                 # Entry point for training & experiments
+│   ├── models/                 # All model definitions (VAE, VQ-VAE, etc.)
+│   │    ├── baseline/          # Data loading and preprocessing logic
+│   │    ├── gan/               # Implementation of GAN-based models
+│   │    ├── ssl/               # Implementation of SSL-based models - Barlow, SimCLR, BYOL
+│   │    ├── treevi/            # Implementation of TreeVI-based models
+│   │    ├── vae/               # Implementation of VAE-based models
+│   │    ├── vqvae/             # Implementation of VQ-VAE models
+│   ├── scripts/
+│   │   ├── etl_process/        # Data loading and preprocessing logic
+│   │   ├── finetune/           # Fine-tuning scripts for SSL pre-trained models
+│   │   ├── reconstruction/     # Training of reconstruction models
+│   │   ├── ssl/                # Code for training SSL models
+│   └── training/               # Training logic for all models + Masked Dataset implementation
+├── data/                       # Processed data, model checkpoints, metrics
+├── experiments/                # Playground for experiments, logs, and results
+├── Makefile                    # Commands for running training/ETL
 └── README.md
 ```
 
@@ -106,12 +113,6 @@ Used as a **baseline** due to its simplicity and strong theoretical foundations.
 📄 Paper: [Tree Variational Inference](https://proceedings.neurips.cc/paper_files/paper/2024/hash/1a63a6a092a95bd45f0237766ac878ba-Abstract-Conference.html)
 
 ---
-
-## 📌 Future Work
-
-* Integrate Vision Transformers (ViT) for encoding context-aware masked regions
-* Evaluate performance on other inpainting datasets (e.g., CelebA, ImageNet subsets)
-* Use perceptual loss instead of only MSE for sharper reconstructions
 
 ---
 
