@@ -23,6 +23,14 @@ Image inpainting is the task of reconstructing missing regions in an image. In t
 
 Make sure your working directory is at the root level (i.e., the parent of `src/`), then use the following commands:
 
+### 0. Install the pre-requisites
+
+Recommended to create venv first:
+
+```bash
+pip install -r requirements.txt
+```
+
 ### 1. Run the ETL pipeline
 
 This will run the entire pipeline of downloading dataset, prerocessing and running training of every model:

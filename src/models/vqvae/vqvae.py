@@ -1,9 +1,9 @@
 import torch
 import torch.nn as nn
 from typing import Tuple
-from src.models.baseline.Encoder import Encoder
-from src.models.baseline.Decoder import Decoder
-from src.models.vqvae.Quantizer import Quantizer
+from src.models.baseline.encoder import Encoder
+from src.models.baseline.decoder import Decoder
+from src.models.vqvae.quantizer import Quantizer
 
 
 class VQVAE(nn.Module):
