@@ -3,16 +3,18 @@ import torch
 from torchvision.transforms import v2
 import random
 
+
 class ViewGenerator:
     """
     Generates augumented view for ssl methods
-    
+
     Attributes:
     - mode: str = "byol",
     - device: str = "cpu",
     - image_size: int = 64,
     - mask_size_ratio: float = 0.0,
     """
+
     def __init__(
         self,
         mode: str = "byol",
@@ -36,16 +38,20 @@ class ViewGenerator:
         self.transform_prim = self.transform_prim.to(device)
 
     def _get_aug(self, image_size, blur_p=0.5, solarize_p=0.2):
-        return v2.Compose([
-            v2.ToImage(),
-            v2.RandomResizedCrop(image_size, scale=(0.7, 1.0)),
-            v2.RandomHorizontalFlip(p=0.5),
-            v2.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.2, hue=0.1),
-            v2.RandomApply([v2.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0))], p=blur_p),
-            v2.RandomApply([v2.RandomSolarize(threshold=0.5)], p=solarize_p),
-            v2.ToDtype(torch.float32, scale=True),
-            v2.Normalize(mean=[0.5] * 3, std=[0.5] * 3),
-        ])
+        return v2.Compose(
+            [
+                v2.ToImage(),
+                v2.RandomResizedCrop(image_size, scale=(0.7, 1.0)),
+                v2.RandomHorizontalFlip(p=0.5),
+                v2.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.2, hue=0.1),
+                v2.RandomApply(
+                    [v2.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0))], p=blur_p
+                ),
+                v2.RandomApply([v2.RandomSolarize(threshold=0.5)], p=solarize_p),
+                v2.ToDtype(torch.float32, scale=True),
+                v2.Normalize(mean=[0.5] * 3, std=[0.5] * 3),
+            ]
+        )
 
     def _apply_random_mask(self, images: torch.Tensor) -> torch.Tensor:
         """

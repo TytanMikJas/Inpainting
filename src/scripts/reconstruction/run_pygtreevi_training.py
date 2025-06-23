@@ -3,9 +3,7 @@ import itertools
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from src.models.treevi.TreeVI_VAE import VAEWithVIStructure
 from src.models.treevi.pyg_tree.PygTreeVAE import PyGTreeVAE
-from src.models.vae.vae import VAE
 from src.scripts.etl_process.ETLProcessor import ETLProcessor
 from src.training.MaskDataset import MaskedDataset
 from src.training.Trainer import Trainer
@@ -20,10 +18,7 @@ CONFIG = {
     "epochs": 30,
     "device": "cuda" if torch.cuda.is_available() else "cpu",
     "mask_size": 0.35,
-    "param_grid": {
-        "num_residual_layers": [2],
-        "latent_dim": [1024]
-    },
+    "param_grid": {"num_residual_layers": [2], "latent_dim": [1024]},
     "save_dir": Path("models/reconstruction/pygtreevi/"),
     "dataset_config": {
         "kaggle_dataset": "mahmudulhaqueshawon/cat-image",

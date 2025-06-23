@@ -1,5 +1,3 @@
-
-
 from typing import Dict, List, Optional, Tuple
 import torch
 from src.models.treevi.tree_variational_interface.vi_structure import VIStructure
@@ -7,6 +5,7 @@ from src.models.treevi.tree_variational_interface.vi_structure import VIStructur
 from typing import Dict, List, Optional, Tuple
 import torch
 from src.models.treevi.tree_variational_interface.vi_structure import VIStructure
+
 
 class TreeStructure(VIStructure):
     """
@@ -19,12 +18,12 @@ class TreeStructure(VIStructure):
     The `eff_root` is a list of tensors ([D]) representing the prefix product of gamma values
     from the root to each node, allowing for efficient O(1) computation of effective correlations.
     """
-    
+
     def __init__(
         self,
         adj_matrix: torch.Tensor,
         edge_list: List[Tuple[int, int]],
-        gamma_dict: Dict[Tuple[int, int], torch.Tensor]
+        gamma_dict: Dict[Tuple[int, int], torch.Tensor],
     ) -> None:
         """
         Args:
@@ -33,19 +32,19 @@ class TreeStructure(VIStructure):
             gamma_dict:   dictionary { (parent, child) → Tensor([D]) }, with values: (-1,1).
         """
         self.adj_matrix = adj_matrix
-        self.edge_list  = edge_list
-        self.gamma      = gamma_dict
+        self.edge_list = edge_list
+        self.gamma = gamma_dict
 
         num_nodes = self.adj_matrix.size(0)
         device = self.adj_matrix.device
 
         parent = torch.full((num_nodes,), -1, dtype=torch.long, device=device)
-        for (p, c) in self.edge_list:
+        for p, c in self.edge_list:
             parent[c] = p
-        self.parent = parent 
-        
+        self.parent = parent
+
         self.children: List[List[int]] = [[] for _ in range(num_nodes)]
-        for (p, c) in self.edge_list:
+        for p, c in self.edge_list:
             self.children[p].append(c)
 
         self.roots = (self.parent == -1).nonzero(as_tuple=False).view(-1).tolist()
@@ -80,10 +79,10 @@ class TreeStructure(VIStructure):
         for i in self.ordering:
             p = self.parent[i].item()
             if p == -1:
-                continue  
+                continue
             g_pi = self.gamma.get((p, i), None)
             if g_pi is None:
-                raise ValueError(f"Lack of gamma parameter for edge: {(p,i)}!")
+                raise ValueError(f"Lack of gamma parameter for edge: {(p, i)}!")
             self.eff_root[i] = self.eff_root[p] * g_pi
 
     def get_ordering(self) -> List[int]:
@@ -112,10 +111,11 @@ class TreeStructure(VIStructure):
         if start == end:
             return torch.ones_like(self.eff_root[start])
 
-        eff_start = self.eff_root[start]  
-        eff_end   = self.eff_root[end]   
-        return eff_end / (eff_start + 1e-10)  # +1e-10 in case if eff_start was 0 (in correct tree, it should not happen)
-
+        eff_start = self.eff_root[start]
+        eff_end = self.eff_root[end]
+        return eff_end / (
+            eff_start + 1e-10
+        )  # +1e-10 in case if eff_start was 0 (in correct tree, it should not happen)
 
 
 class OrginalTreeStructure(VIStructure):
@@ -124,7 +124,7 @@ class OrginalTreeStructure(VIStructure):
     tree-structured variational inference. It stores the adjacency matrix (if any),
     the edge list, the learned edge correlation parameters, and builds a parent map
     and a topological ordering for ancestral sampling.
-    
+
     Attributes:
         adj_matrix (torch.Tensor): A binary (0/1) matrix of shape (N, N) representing edge connections.
         edge_list (List[Tuple[int, int]]): List of (parent, child) tuples defining the tree.
@@ -133,15 +133,19 @@ class OrginalTreeStructure(VIStructure):
         parent_map (Dict[int, Optional[int]]): Mapping from node index to its parent (None for root).
         ordering (List[int]): List of node indices in a topological (ancestral) order.
     """
-    
-    def __init__(self, 
-                 adj_matrix: torch.Tensor, 
-                 edge_list: List[Tuple[int, int]], 
-                 gamma_dict: Dict[Tuple[int, int], torch.Tensor]) -> None:
+
+    def __init__(
+        self,
+        adj_matrix: torch.Tensor,
+        edge_list: List[Tuple[int, int]],
+        gamma_dict: Dict[Tuple[int, int], torch.Tensor],
+    ) -> None:
         self.adj_matrix = adj_matrix  # assumed binary, dtype=torch.int or float
         self.edge_list = edge_list
-        self.gamma = gamma_dict  # mapping: (parent, child) -> torch.Tensor of shape [latent_dim]
-        
+        self.gamma = (
+            gamma_dict  # mapping: (parent, child) -> torch.Tensor of shape [latent_dim]
+        )
+
         self.parent_map = {}  # child -> parent
         # Build parent_map from edge_list
         for parent, child in self.edge_list:
@@ -159,7 +163,7 @@ class OrginalTreeStructure(VIStructure):
         visited = [False] * num_nodes
         for root in self.roots:
             self._dfs(root, visited)
-        
+
     def _dfs(self, node: int, visited: List[bool]) -> None:
         """Private helper: Perform DFS to compute ancestral ordering."""
         visited[node] = True
@@ -169,7 +173,7 @@ class OrginalTreeStructure(VIStructure):
         for child in children:
             if not visited[child]:
                 self._dfs(child, visited)
-    
+
     def get_ordering(self) -> List[int]:
         return self.ordering
 
@@ -194,17 +198,23 @@ class OrginalTreeStructure(VIStructure):
         effective_gamma = None
         # Loop over indices from start_index to len(path)-1 (each adjacent pair forms an edge)
         for i in range(start_index, len(path) - 1):
-            edge = (path[i], path[i+1])
+            edge = (path[i], path[i + 1])
             gamma_val = self.gamma.get(edge, None)
             if gamma_val is None:
-                raise ValueError(f"Gamma parameter for edge {edge} not found in TreeStructure.")
+                raise ValueError(
+                    f"Gamma parameter for edge {edge} not found in TreeStructure."
+                )
             if effective_gamma is None:
                 effective_gamma = gamma_val
             else:
-                effective_gamma = effective_gamma * gamma_val  # elementwise multiplication
+                effective_gamma = (
+                    effective_gamma * gamma_val
+                )  # elementwise multiplication
         if effective_gamma is None:
             # If there are no edges from start to end (start equals end), return ones.
             # Infer latent dimension from any gamma if available, else default to 1.
             latent_dim = list(self.gamma.values())[0].shape[0] if self.gamma else 1
-            effective_gamma = torch.ones(latent_dim, device=next(iter(self.gamma.values())).device)  # assume same device
+            effective_gamma = torch.ones(
+                latent_dim, device=next(iter(self.gamma.values())).device
+            )  # assume same device
         return effective_gamma

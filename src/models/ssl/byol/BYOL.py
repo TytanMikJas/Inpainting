@@ -64,7 +64,10 @@ class BYOL(nn.Module):
 
         self.device = device
         self.view_generator = ViewGenerator(
-            mode='byol', device=self.device, image_size=image_size, mask_size_ratio=mask_size_ratio
+            mode="byol",
+            device=self.device,
+            image_size=image_size,
+            mask_size_ratio=mask_size_ratio,
         )
         self.tau = tau
 
@@ -92,7 +95,7 @@ class BYOL(nn.Module):
         z = torch.cat([z1, z2], dim=0)
 
         return q, z
-    
+
     def forward_repr(self, x: torch.Tensor) -> torch.Tensor:
         return self.online_encoder(x)
 
