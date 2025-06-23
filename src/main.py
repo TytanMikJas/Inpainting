@@ -6,6 +6,7 @@ from src.training.TrainScheduler import TrainScheduler, SingleTrainEvent
 from src.models.vae.vae import VAE
 from src.models.treevi.TreeVI_VAE import VAEWithVIStructure
 
+
 def run_etl():
     DATASET_ID = "mahmudulhaqueshawon/cat-image"
     DATA_DIR = "data/raw_data"
@@ -59,6 +60,7 @@ def run_training():
 
     print("Training completed.")
 
+
 def run_treevi_training():
     print("Running treevi...")
 
@@ -94,11 +96,12 @@ def run_treevi_training():
             save_dir="models/test_run",
         )
     ]
-    
+
     scheduler = TrainScheduler(events, model, model_name="test_treevi")
     scheduler.start_training()
 
     print("TreeVI training completed.")
+
 
 if __name__ == "__main__":
     command = sys.argv[1]
@@ -106,7 +109,7 @@ if __name__ == "__main__":
     if command == "run_etl":
         run_etl()
     elif command == "run_dummy_training":
-        #run_dummy_training()
+        # run_dummy_training()
         run_treevi_training()
     elif command == "run_vae_gan_training":
         run_training()

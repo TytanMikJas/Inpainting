@@ -4,7 +4,6 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from src.models.treevi.TreeVI_VAE import VAEWithVIStructure
-from src.models.vae.vae import VAE
 from src.scripts.etl_process.ETLProcessor import ETLProcessor
 from src.training.MaskDataset import MaskedDataset
 from src.training.Trainer import Trainer
@@ -21,7 +20,7 @@ CONFIG = {
     "mask_size": 0.35,
     "param_grid": {
         "num_residual_layers": [2],
-        "latent_dim": [256, 512, 1024]#, 2048],
+        "latent_dim": [256, 512, 1024],  # , 2048],
     },
     "save_dir": Path("models/reconstruction/treevi/text/"),
     "dataset_config": {

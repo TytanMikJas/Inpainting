@@ -62,7 +62,7 @@ class Trainer:
             "partial_loss": [],
             "step": [],
             "num_active_dims": [],
-            "time": []
+            "time": [],
         }
         return train_metrics, val_metrics
 
@@ -283,10 +283,10 @@ class Trainer:
                 train_metrics,
                 mask_ratio,
             )
-            train_metrics['time'].append(time.time() - start_time)
+            train_metrics["time"].append(time.time() - start_time)
             start_val_time = time.time()
             loss = self._validate_model(model, val_loader, loss_fn, val_metrics)
-            val_metrics['time'].append(time.time() - start_val_time)
+            val_metrics["time"].append(time.time() - start_val_time)
             train_metrics["step"].append(epoch)
             val_metrics["step"].append(epoch)
             if loss < best_val_loss:

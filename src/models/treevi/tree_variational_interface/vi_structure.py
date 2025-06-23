@@ -3,12 +3,13 @@ from typing import List, Optional
 
 import torch
 
+
 class VIStructure(ABC):
     """
     The VIStructure class encapsulates the structure of a variational inference model.
     It is used to define the latent variables and their relationships in a tree-structured or graph-structured
     variational inference setting.
-    
+
     Attributes:
         adj_matrix (torch.Tensor): A binary (0/1) matrix of shape (N, N) representing edge connections.
         edge_list (List[Tuple[int, int]]): List of (parent, child) tuples defining the tree.
@@ -17,7 +18,7 @@ class VIStructure(ABC):
         parent_map (Dict[int, Optional[int]]): Mapping from node index to its parent (None for root).
         ordering (List[int]): List of node indices in a topological (ancestral) order.
     """
-    
+
     @abstractmethod
     def get_ordering(self) -> List[int]:
         pass
@@ -33,4 +34,3 @@ class VIStructure(ABC):
     @abstractmethod
     def compute_effective_correlation(self, start: int, end: int) -> torch.Tensor:
         pass
-    
