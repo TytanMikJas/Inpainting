@@ -12,3 +12,6 @@ run_byol:
 
 run_finetune:
 	PYTHONPATH=. python src/scripts/finetune/run_vae_finetune.py barlow_twins
+
+jupyter:
+	uv run --with jupyter --active jupyter lab

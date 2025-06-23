@@ -108,6 +108,8 @@ if __name__ == "__main__":
     elif command == "run_dummy_training":
         #run_dummy_training()
         run_treevi_training()
+    elif command == "run_vae_gan_training":
+        run_training()
     else:
         print(
             "Usage: python main.py <command>\nCommands:\netl - Run ETL process\nrun_training - Run training"
