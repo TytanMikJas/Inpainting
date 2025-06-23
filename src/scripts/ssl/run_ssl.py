@@ -1,9 +1,5 @@
 import sys
 import itertools
-from pathlib import Path
-import torch
-from torch import optim
-
 from src.scripts.etl_process.ETLProcessor import ETLProcessor
 from src.scripts.ssl.SSLTrainer import SSLTrainer
 from src.models.ssl.byol.BYOL import BYOL
@@ -22,8 +18,8 @@ MODEL_REGISTRY = {
         "model_cls": BarlowTwins,
         "config_fn": get_barlow_twins_config,
         "loss_fn": lambda model, z1, z2: model.barlow_twins_loss(z1, z2),
-        "update_fn": lambda model: None,  
-    }
+        "update_fn": lambda model: None,
+    },
 }
 
 
@@ -58,7 +54,9 @@ def main():
         }
         model_args.update(dict(zip(param_keys, combo)))
 
-        model_name = f"{model_key}_" + "_".join(f"{k}{str(v).replace('.', '')}" for k, v in zip(param_keys, combo))
+        model_name = f"{model_key}_" + "_".join(
+            f"{k}{str(v).replace('.', '')}" for k, v in zip(param_keys, combo)
+        )
 
         print(f"\n[{i + 1}/{total_configs}] Running: {model_name}")
 

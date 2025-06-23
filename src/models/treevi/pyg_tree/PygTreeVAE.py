@@ -2,18 +2,21 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch_geometric.data import Data, Batch
-from torch_geometric.nn import GCNConv, MessagePassing
-from typing import Dict, Tuple, List, Optional
+from torch_geometric.nn import GCNConv
+from typing import Dict, Tuple, Optional
 
 from src.models.treevi.pyg_tree import PyGTreeOptimizer
-from src.models.treevi.tree_variational_interface.tree_vi_structure.tree_vi import TreeStructure
+from src.models.treevi.tree_variational_interface.tree_vi_structure.tree_vi import (
+    TreeStructure,
+)
 from src.models.vae.vae import VAE
+
 
 class PyGTreeVAE(nn.Module):
     """
     VAE + PyG‐based TreeVI with GNN optimized structure.
     """
+
     def __init__(
         self,
         input_dim: int,
@@ -25,7 +28,7 @@ class PyGTreeVAE(nn.Module):
         hidden_dim_gnn: int = 64,
         num_inst_gnn_layers: int = 2,
         optimizer_config: dict = {},
-        device: str = "cuda" if torch.cuda.is_available() else "cpu"
+        device: str = "cuda" if torch.cuda.is_available() else "cpu",
     ):
         super(PyGTreeVAE, self).__init__()
         self.device = device
@@ -41,9 +44,9 @@ class PyGTreeVAE(nn.Module):
             device=device,
         )
 
-        self.inst_convs = nn.ModuleList([
-            GCNConv(latent_dim, latent_dim) for _ in range(num_inst_gnn_layers)
-        ])
+        self.inst_convs = nn.ModuleList(
+            [GCNConv(latent_dim, latent_dim) for _ in range(num_inst_gnn_layers)]
+        )
 
         self.dim_adj_logits = nn.Parameter(torch.randn(latent_dim, latent_dim))
         self.dim_embeddings = nn.Parameter(torch.randn(latent_dim, emb_dim))
@@ -51,16 +54,14 @@ class PyGTreeVAE(nn.Module):
         self.dim_gnn_2 = GCNConv(hidden_dim_gnn, 1)
 
         self.tree_optimizer = PyGTreeOptimizer.PygTreeOptimizer(
-            latent_dim=latent_dim,
-            hidden_dim=hidden_dim_gnn,
-            device=device
+            latent_dim=latent_dim, hidden_dim=hidden_dim_gnn, device=device
         )
 
         self.current_inst_edge_index: Optional[torch.LongTensor] = None
-        self.current_gamma_dict: Dict[Tuple[int,int], torch.Tensor] = {}
+        self.current_gamma_dict: Dict[Tuple[int, int], torch.Tensor] = {}
 
     def _init_chain_tree_edge_index(self, num_nodes: int) -> torch.LongTensor:
-        """        
+        """
         Create a simple chain of nodes for num_nodes. Returns bidirected edge_index of size: [2, 2*(num_nodes-1)].
         """
         src = []
@@ -77,7 +78,9 @@ class PyGTreeVAE(nn.Module):
     def decode(self, z: torch.Tensor) -> torch.Tensor:
         return self.vanilla_vae.decode(z)
 
-    def compute_instance_gnn(self, mu: torch.Tensor, edge_index: torch.LongTensor) -> torch.Tensor:
+    def compute_instance_gnn(
+        self, mu: torch.Tensor, edge_index: torch.LongTensor
+    ) -> torch.Tensor:
         """
         Passes mu:[B,D] through several GCNConv layers according to edge_index: [2, E].
         Returns v_inst: [B,D].
@@ -88,7 +91,7 @@ class PyGTreeVAE(nn.Module):
         return h
 
     def compute_dim_gnn(self) -> torch.Tensor:
-        """        
+        """
         Create a graph of latent dimensions: dim_adj_logits → binarne edge_index_dim.
         Passes dim_embeddings: [D, emb_dim] through 2 layers of GCNConv and returns dim_importance: [D].
         """
@@ -106,30 +109,31 @@ class PyGTreeVAE(nn.Module):
             src, dst = torch.where(temp > 0)
         edge_index_dim = torch.stack([src, dst], dim=0)
 
-        x_dim = self.dim_embeddings 
-        x_dim = F.relu(self.dim_gnn_1(x_dim, edge_index_dim)) 
-        x_dim = self.dim_gnn_2(x_dim, edge_index_dim)         
-        dim_importance = x_dim.squeeze(1)                     
+        x_dim = self.dim_embeddings
+        x_dim = F.relu(self.dim_gnn_1(x_dim, edge_index_dim))
+        x_dim = self.dim_gnn_2(x_dim, edge_index_dim)
+        dim_importance = x_dim.squeeze(1)
 
         return dim_importance
 
     def forward(self, x: torch.Tensor) -> Dict[str, torch.Tensor]:
         B = x.size(0)
-        mu, sigma = self.encode(x)  
+        mu, sigma = self.encode(x)
 
-        if (self.current_inst_edge_index is None) or \
-        (self.current_inst_edge_index.size(1) != 2*(B - 1)):
+        if (self.current_inst_edge_index is None) or (
+            self.current_inst_edge_index.size(1) != 2 * (B - 1)
+        ):
             self.current_inst_edge_index = self._init_chain_tree_edge_index(B)
         edge_index = self.current_inst_edge_index
 
-        v_inst = self.compute_instance_gnn(mu, edge_index) 
-        dim_importance = self.compute_dim_gnn()           
+        v_inst = self.compute_instance_gnn(mu, edge_index)
+        dim_importance = self.compute_dim_gnn()
 
-        v = v_inst * dim_importance.view(1, -1) 
-        z = mu + sigma * v                       
-        recon = self.decode(z)                  
+        v = v_inst * dim_importance.view(1, -1)
+        z = mu + sigma * v
+        recon = self.decode(z)
 
-        log_px_z = -F.mse_loss(recon, x, reduction='sum')
+        log_px_z = -F.mse_loss(recon, x, reduction="sum")
         prior_log_prob = -0.5 * torch.sum(z.pow(2) + math.log(2 * math.pi))
         entropy = 0.5 * torch.sum(1 + torch.log(sigma.pow(2) + 1e-8))
         elbo = log_px_z + prior_log_prob + entropy
@@ -142,15 +146,15 @@ class PyGTreeVAE(nn.Module):
         new_edge_index, new_gamma_dict = self.tree_optimizer(
             current_edge_index=self.current_inst_edge_index,
             mu=mu,
-            gamma_dict=self.current_gamma_dict
+            gamma_dict=self.current_gamma_dict,
         )
         self.current_inst_edge_index = new_edge_index
         self.current_gamma_dict = new_gamma_dict
 
         return {
-            'recon': recon,
-            'elbo': elbo,
-            'num_active_dims': num_active_dims,
-            'dim_importance': dim_importance,
-            'v_inst': v_inst
+            "recon": recon,
+            "elbo": elbo,
+            "num_active_dims": num_active_dims,
+            "dim_importance": dim_importance,
+            "v_inst": v_inst,
         }

@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 from typing import Callable, Optional, Type
 from tqdm import tqdm
@@ -62,7 +61,7 @@ class SSLTrainer:
             for x_batch, _ in tqdm(dataloader, desc=f"[{model_name}] Epoch {epoch}"):
                 x_batch = x_batch.to(self.device)
                 out1, out2 = model(x_batch)
-                loss = loss_fn(model, out1, out2) 
+                loss = loss_fn(model, out1, out2)
 
                 if not torch.isfinite(loss).all():
                     print("Non-finite loss encountered.")
@@ -112,7 +111,9 @@ class SSLTrainer:
                     break
 
         embeddings = torch.cat(all_embeddings)[:max_samples]
-        reduced = TSNE(n_components=2, perplexity=100, max_iter=1000, random_state=42).fit_transform(embeddings)
+        reduced = TSNE(
+            n_components=2, perplexity=100, max_iter=1000, random_state=42
+        ).fit_transform(embeddings)
 
         plt.figure(figsize=(8, 8))
         plt.scatter(reduced[:, 0], reduced[:, 1], s=10, alpha=0.7, c="navy")

@@ -1,56 +1,71 @@
-import math
 from typing import Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 import torch
 import torch.optim as optim
-from src.models.treevi.tree_variational_interface.tree_vi_structure.tree_vi import OrginalTreeStructure, TreeStructure
+from src.models.treevi.tree_variational_interface.tree_vi_structure.tree_vi import (
+    OrginalTreeStructure,
+    TreeStructure,
+)
 from src.models.treevi.tree_variational_interface.vi_structure import VIStructure
 
+
 class TreeOptimizer:
-    def __init__(self, latent_dim: int, config: dict, loss_callback: Optional[Callable[[torch.Tensor], torch.Tensor]] = None) -> None:
+    def __init__(
+        self,
+        latent_dim: int,
+        config: dict,
+        loss_callback: Optional[Callable[[torch.Tensor], torch.Tensor]] = None,
+    ) -> None:
         self.D = latent_dim
         tree_cfg = config.get("tree_optimizer", {})
 
         self.penalty_parameter = float(tree_cfg.get("penalty_parameter", 1.0))
-        self.dual_variable     = float(tree_cfg.get("dual_init", 0.0))
-        self.threshold         = float(tree_cfg.get("threshold", 0.3))
-        self.max_iterations    = int(tree_cfg.get("max_iterations", 100))
-        self.tolerance         = float(tree_cfg.get("tolerance", 1e-8))
-        self.lbfgs_lr          = float(tree_cfg.get("lbfgs_lr", 0.01))
-        self.lbfgs_max_iter    = int(tree_cfg.get("lbfgs_max_iter", 20))
-        self.loss_callback     = loss_callback
-        self.device            = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        
-
+        self.dual_variable = float(tree_cfg.get("dual_init", 0.0))
+        self.threshold = float(tree_cfg.get("threshold", 0.3))
+        self.max_iterations = int(tree_cfg.get("max_iterations", 100))
+        self.tolerance = float(tree_cfg.get("tolerance", 1e-8))
+        self.lbfgs_lr = float(tree_cfg.get("lbfgs_lr", 0.01))
+        self.lbfgs_max_iter = int(tree_cfg.get("lbfgs_max_iter", 20))
+        self.loss_callback = loss_callback
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def _h_function(self, A: torch.Tensor) -> torch.Tensor:
         expm = torch.matrix_exp(A * A)
         return torch.trace(expm) - self.d
 
-    def _augmented_lagrangian(self, A: torch.Tensor, loss_term: torch.Tensor) -> torch.Tensor:
+    def _augmented_lagrangian(
+        self, A: torch.Tensor, loss_term: torch.Tensor
+    ) -> torch.Tensor:
         hval = self._h_function(A)
         long_term_copy = loss_term.clone().detach().to(self.device).float()
-        return long_term_copy + 0.5 * self.penalty_parameter * hval.pow(2) + self.dual_variable * hval
+        return (
+            long_term_copy
+            + 0.5 * self.penalty_parameter * hval.pow(2)
+            + self.dual_variable * hval
+        )
 
     def run_kruskal_mst_from_numpy(self, scores: np.ndarray) -> List[Tuple[int, int]]:
         all_edges = []
         for i in range(self.d):
-            for j in range(i+1, self.d):
-                all_edges.append((i, j, scores[i,j].item()))
+            for j in range(i + 1, self.d):
+                all_edges.append((i, j, scores[i, j].item()))
 
         all_edges.sort(key=lambda t: t[2], reverse=True)
 
         parent_uf = list(range(self.d))
-        rank_uf   = [0]*self.d
+        rank_uf = [0] * self.d
+
         def find(u):
             while parent_uf[u] != u:
                 parent_uf[u] = parent_uf[parent_uf[u]]
                 u = parent_uf[u]
             return u
+
         def union(u, v):
             ru, rv = find(u), find(v)
-            if ru == rv: return False
+            if ru == rv:
+                return False
             if rank_uf[ru] < rank_uf[rv]:
                 parent_uf[ru] = rv
             elif rank_uf[ru] > rank_uf[rv]:
@@ -61,36 +76,44 @@ class TreeOptimizer:
             return True
 
         mst_edges = []
-        for (i,j,sc) in all_edges:
-            if union(i,j):
-                mst_edges.append((i,j))
-            if len(mst_edges) == self.d-1:
+        for i, j, sc in all_edges:
+            if union(i, j):
+                mst_edges.append((i, j))
+            if len(mst_edges) == self.d - 1:
                 break
-            
+
         return mst_edges
 
-    def optimize_tree(self, initial_tree: VIStructure, num_nodes: int, loss_term: torch.Tensor) -> VIStructure:
+    def optimize_tree(
+        self, initial_tree: VIStructure, num_nodes: int, loss_term: torch.Tensor
+    ) -> VIStructure:
         """
         Returns a new VIStructure with:
           1.   A_binary = threshold( sigmoid(W_opt), self.threshold )
           2.   gamma_dict[(i,j)] = tanh( gamma_raw[i,j] )  for each kept edge
         """
         self.d = num_nodes
-        self.W = initial_tree.adj_matrix.clone().detach().to(self.device).float().requires_grad_(True)
-        
+        self.W = (
+            initial_tree.adj_matrix.clone()
+            .detach()
+            .to(self.device)
+            .float()
+            .requires_grad_(True)
+        )
+
         gamma_param = torch.zeros((num_nodes, num_nodes, self.D), device=self.device)
         for i in range(num_nodes - 1):
-            gamma_param[i, i + 1, :] = 0.5  
+            gamma_param[i, i + 1, :] = 0.5
 
-        self.gamma_raw  = torch.nn.Parameter(gamma_param)
-        
+        self.gamma_raw = torch.nn.Parameter(gamma_param)
+
         self.optimizer = optim.LBFGS(
             [self.W, self.gamma_raw], lr=self.lbfgs_lr, max_iter=self.lbfgs_max_iter
         )
-        
+
         def closure():
             self.optimizer.zero_grad()
-            A = torch.sigmoid(self.W)      
+            A = torch.sigmoid(self.W)
             L = self._augmented_lagrangian(A, loss_term)
             L.backward()
             return L
@@ -110,27 +133,26 @@ class TreeOptimizer:
 
         with torch.no_grad():
             A_final = torch.sigmoid(self.W)
-            mask   = (A_final >= self.threshold)
+            mask = A_final >= self.threshold
 
-            
             scores = ((A_final + A_final.T) / 2.0).cpu().numpy()
-            mst_edges = self.run_kruskal_mst_from_numpy(scores) 
+            mst_edges = self.run_kruskal_mst_from_numpy(scores)
             # (c) build A_binary
             A_binary = torch.zeros_like(A_final)
-            for (i,j) in mst_edges:
-                A_binary[i,j] = 1.0
-                A_binary[j,i] = 1.0
+            for i, j in mst_edges:
+                A_binary[i, j] = 1.0
+                A_binary[j, i] = 1.0
 
             tanh_gamma = torch.tanh(self.gamma_raw)
             gamma_dict = {}
-            for (i,j) in mst_edges:
-                γ_vec = tanh_gamma[i,j,:].clamp(-0.99, 0.99)  
-                gamma_dict[(i,j)] = γ_vec
+            for i, j in mst_edges:
+                γ_vec = tanh_gamma[i, j, :].clamp(-0.99, 0.99)
+                gamma_dict[(i, j)] = γ_vec
 
         new_tree = TreeStructure(
             adj_matrix=A_binary.detach().cpu(),
-            edge_list= mst_edges,
-            gamma_dict= gamma_dict
+            edge_list=mst_edges,
+            gamma_dict=gamma_dict,
         )
         return new_tree
 
@@ -161,8 +183,11 @@ class OrginalTreeOptimizer:
         device (torch.device): Computation device.
     """
 
-    def __init__(self, config: dict,
-                 loss_callback: Optional[Callable[[torch.Tensor], torch.Tensor]] = None) -> None:
+    def __init__(
+        self,
+        config: dict,
+        loss_callback: Optional[Callable[[torch.Tensor], torch.Tensor]] = None,
+    ) -> None:
         tree_cfg = config.get("tree_optimizer", {})
         self.penalty_parameter: float = float(tree_cfg.get("penalty_parameter", 1.0))
         self.dual_variable: float = float(tree_cfg.get("dual_init", 0.0))
@@ -179,12 +204,22 @@ class OrginalTreeOptimizer:
 
     def _augmented_lagrangian(self, A: torch.Tensor) -> torch.Tensor:
         # Compute the loss ℓ(A) (if callback is provided; otherwise 0.0)
-        loss_term = self.loss_callback(A) if self.loss_callback is not None else torch.tensor(0.0, device=self.device)
+        loss_term = (
+            self.loss_callback(A)
+            if self.loss_callback is not None
+            else torch.tensor(0.0, device=self.device)
+        )
         h_value = self._h_function(A)
-        lagrangian = loss_term + (self.penalty_parameter / 2.0) * (h_value ** 2) + self.dual_variable * h_value
+        lagrangian = (
+            loss_term
+            + (self.penalty_parameter / 2.0) * (h_value**2)
+            + self.dual_variable * h_value
+        )
         return lagrangian
 
-    def optimize_tree(self, initial_tree: VIStructure, embeddings: Optional[torch.Tensor] = None) -> VIStructure:
+    def optimize_tree(
+        self, initial_tree: VIStructure, embeddings: Optional[torch.Tensor] = None
+    ) -> VIStructure:
         # Get initial adjacency matrix A from the initial tree; ensure it's a float tensor on the proper device.
         A_init = initial_tree.adj_matrix.clone().detach().to(self.device).float()
         # Make A a parameter to be optimized.
@@ -195,6 +230,7 @@ class OrginalTreeOptimizer:
 
         # Outer iterative optimization loop using augmented Lagrangian method.
         for iteration in range(self.max_iterations):
+
             def closure() -> torch.Tensor:
                 optimizer.zero_grad()
                 L_aug = self._augmented_lagrangian(A_opt)
@@ -240,9 +276,13 @@ class OrginalTreeOptimizer:
                         gamma_val = float(A_np[i, j])
                         gamma_val_clamped = max(min(gamma_val, 0.99), -0.99)
                         # For simplicity, we assume latent dimension 1 (or can be extended to vectorized gamma).
-                        gamma_tensor = torch.tensor([gamma_val_clamped], dtype=torch.float32, device=self.device)
+                        gamma_tensor = torch.tensor(
+                            [gamma_val_clamped], dtype=torch.float32, device=self.device
+                        )
                         gamma_dict[(i, j)] = gamma_tensor
 
         # Create a new TreeStructure with the optimized binary adjacency matrix, edge list, and gamma_dict.
-        new_tree = OrginalTreeStructure(adj_matrix=A_binary.detach(), edge_list=edge_list, gamma_dict=gamma_dict)
+        new_tree = OrginalTreeStructure(
+            adj_matrix=A_binary.detach(), edge_list=edge_list, gamma_dict=gamma_dict
+        )
         return new_tree

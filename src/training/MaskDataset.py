@@ -3,7 +3,9 @@ import random
 
 
 class MaskedDataset(Dataset):
-    def __init__(self, clean_dataset: Dataset, mask_size_ratio: float, random_state: int = 0):
+    def __init__(
+        self, clean_dataset: Dataset, mask_size_ratio: float, random_state: int = 0
+    ):
         """
         :param clean_dataset: Dataset providing clean images.
         :param mask_size_ratio: Size of square mask as a fraction of image size (e.g., 0.3 masks a 30% wide/tall square).
@@ -32,6 +34,6 @@ class MaskedDataset(Dataset):
 
         top, left, mask_size = self.masks[idx]
 
-        masked_img[:, top:top+mask_size, left:left+mask_size] = 0.5
+        masked_img[:, top : top + mask_size, left : left + mask_size] = 0.5
 
         return masked_img, clean_img

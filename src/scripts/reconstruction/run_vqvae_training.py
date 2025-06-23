@@ -3,7 +3,7 @@ import itertools
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from src.models.vqvae.VQVAE import VQVAE
+from src.models.vqvae.vqvae import VQVAE
 from src.scripts.etl_process.ETLProcessor import ETLProcessor
 from src.training.MaskDataset import MaskedDataset
 from src.training.Trainer import Trainer

@@ -4,10 +4,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch
 import torch
-import torch.nn.functional as F
 import numpy as np
 from skimage.metrics import structural_similarity as compare_ssim
 from skimage.metrics import peak_signal_noise_ratio as compare_psnr
+
 
 def get_test_loader():
     """
@@ -28,6 +28,7 @@ def get_test_loader():
     )
 
     return test_loader
+
 
 def evaluate_model(model, test_loader, device):
     """
@@ -64,7 +65,11 @@ def evaluate_model(model, test_loader, device):
             for i in range(batch_size):
                 mse = np.mean((original_np[i] - recon_np[i]) ** 2)
                 ssim = compare_ssim(
-                    original_np[i], recon_np[i], data_range=1.0, multichannel=True, channel_axis=-1
+                    original_np[i],
+                    recon_np[i],
+                    data_range=1.0,
+                    multichannel=True,
+                    channel_axis=-1,
                 )
                 psnr = compare_psnr(original_np[i], recon_np[i], data_range=1.0)
 
@@ -82,8 +87,8 @@ def evaluate_model(model, test_loader, device):
     print(f"Test SSIM: {avg_ssim:.4f}")
     print(f"Test PSNR: {avg_psnr:.4f}")
 
-def show_images(original, noisy, reconstructed, n=8):
 
+def show_images(original, noisy, reconstructed, n=8):
     n = min(n, original.size(0), noisy.size(0), reconstructed.size(0))
 
     fig, axes = plt.subplots(3, n, figsize=(n * 2, 6))

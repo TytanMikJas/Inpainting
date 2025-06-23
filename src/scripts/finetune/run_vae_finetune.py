@@ -38,7 +38,7 @@ CONFIG = {
         "barlow_twins": [
             "models/ssl/barlow_twins/barlow_twins_num_residual_layers1_mlp_hidden_dim512_mask_size_ratio035_lambda_0005.pt",
             "models/ssl/barlow_twins/barlow_twins_num_residual_layers1_mlp_hidden_dim512_mask_size_ratio035_lambda_001.pt",
-            "models/ssl/barlow_twins/barlow_twins_num_residual_layers1_mlp_hidden_dim512_mask_size_ratio035_lambda_0001.pt"
+            "models/ssl/barlow_twins/barlow_twins_num_residual_layers1_mlp_hidden_dim512_mask_size_ratio035_lambda_0001.pt",
         ],
     },
     "save_root": Path("models/reconstruction/vae-ssl/"),

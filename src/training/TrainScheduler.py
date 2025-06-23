@@ -24,9 +24,9 @@ class SingleTrainEvent:
     mask_size: float = 0.0
     save_dir: Optional[str] = None
     dropout: Optional[float] = None
-    weight_decay=0,
-    model_name='default',
-    vis_dir='.'
+    weight_decay = (0,)
+    model_name = ("default",)
+    vis_dir = "."
 
 
 class TrainScheduler:
@@ -96,9 +96,9 @@ class TrainScheduler:
             loss_fn=event.loss_fn,
             mask_ratio=event.mask_size,
             weight_decay=0,
-            model_name='',
-            save_dir='.',
-            vis_dir='.'
+            model_name="",
+            save_dir=".",
+            vis_dir=".",
         )
 
         model_path = os.path.join(save_dir, f"{self.model_name}_event{index}.pt")
@@ -113,10 +113,9 @@ class TrainScheduler:
             json.dump(metrics, fp, indent=2)
         print(f"Metrics saved to {metrics_path}")
 
-
     def run_auto_event(self, target_event: SingleTrainEvent):
         print("[AUTO] Starting auto curriculum training")
-        
+
         max_epochs = target_event.epochs
         final_noise = target_event.noise_level
         full_train_data = target_event.train_loader.dataset
@@ -159,12 +158,14 @@ class TrainScheduler:
                 loss_fn=loss_fn,
                 loss_fn_args=target_event.loss_fn_args,
                 mask_size=current_mask,
-                dropout=target_event.dropout
+                dropout=target_event.dropout,
             )
             self.run_event(event, index=used_epochs)
 
             # Evaluate model (basic val accuracy estimate)
-            val_loss = self.trainer._validate_model(self.model, val_loader, loss_fn, {}, used_epochs)
+            val_loss = self.trainer._validate_model(
+                self.model, val_loader, loss_fn, {}, used_epochs
+            )
             acc = 1.0 - val_loss if val_loss is not None else 0.0
 
             # Update epochs used
@@ -172,9 +173,13 @@ class TrainScheduler:
 
             # Estimate improvement
             improvement = acc - previous_acc
-            expected_progress = (current_mask / final_noise) * 0.1  # simplistic heuristic
+            expected_progress = (
+                current_mask / final_noise
+            ) * 0.1  # simplistic heuristic
 
-            print(f"[AUTO] Accuracy: {acc:.4f}, Improvement: {improvement:.4f}, Expected: {expected_progress:.4f}")
+            print(
+                f"[AUTO] Accuracy: {acc:.4f}, Improvement: {improvement:.4f}, Expected: {expected_progress:.4f}"
+            )
 
             if acc < previous_acc + expected_progress:
                 # Too slow -> smaller step
@@ -211,7 +216,7 @@ class TrainScheduler:
             loss_fn=loss_fn,
             loss_fn_args=target_event.loss_fn_args,
             noise_level=final_noise,
-            dropout=target_event.dropout
+            dropout=target_event.dropout,
         )
         self.run_event(final_event, index="final")
         print("[AUTO] Auto curriculum training completed.")
